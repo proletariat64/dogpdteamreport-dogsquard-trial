@@ -1,0 +1,137 @@
+/* ── Page Title ── */
+.page-title { padding: var(--space-lg) var(--space-xl) var(--space-md); border-bottom: 1px solid var(--hairline); }
+
+/* ── Top Nav ── */
+.top-nav {
+  display: flex; align-items: center; height: 64px;
+  background: var(--canvas); border-bottom: 1px solid var(--hairline);
+  padding: 0 var(--space-xl); gap: var(--space-lg);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-brand {
+  font-family: var(--font-display); font-size: 20px; font-weight: 500;
+  color: var(--ink); text-decoration: none; letter-spacing: -0.3px;
+}
+.nav-links { display: flex; gap: var(--space-xs); flex: 1; }
+.nav-link {
+  font-size: 14px; font-weight: 500; color: var(--muted); text-decoration: none;
+  padding: 8px 14px; border-radius: var(--radius-md); transition: background 0.15s, color 0.15s;
+}
+.nav-link:hover { color: var(--ink); background: var(--surface-soft); }
+.nav-link.active { color: var(--primary); background: var(--surface-card); }
+.nav-right { display: flex; align-items: center; gap: var(--space-sm); }
+.lock-indicator {
+  display: flex; align-items: center; gap: var(--space-xs);
+  font-size: 13px; font-weight: 500; color: var(--muted);
+}
+.lock-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--success);
+  transition: background 0.3s;
+}
+.lock-dot.locked { background: var(--error); }
+.lock-dot.own { background: var(--primary); animation: pulse 2s infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Content Area ── */
+.content { max-width: 1200px; margin: 0 auto; padding: var(--space-xl); }
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+.toolbar .form-input, .toolbar .form-select { width: auto; min-width: 160px; }
+.toolbar-spacer { flex: 1; }
+
+/* ── Filter bar ── */
+.filter-bar { display: flex; gap: var(--space-sm); margin-bottom: var(--space-lg); flex-wrap: wrap; align-items: center; }
+
+/* ── Dashboard Metrics ── */
+.metrics-row { display: flex; gap: var(--space-md); margin-bottom: var(--space-md); flex-wrap: wrap; }
+.metric-item { flex: 1; min-width: 120px; }
+.metric-value { font-family: var(--font-display); font-size: 28px; font-weight: 500; color: var(--ink); }
+.metric-label { font-size: 12px; color: var(--muted); letter-spacing: 0.8px; margin-top: var(--space-xxs); }
+.progress-bar {
+  width: 100%; height: 4px; background: var(--surface-card); border-radius: 2px; overflow: hidden;
+  margin-top: var(--space-xs);
+}
+.progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+.progress-fill.good { background: var(--success); }
+.progress-fill.warn { background: var(--warning); }
+.progress-fill.bad { background: var(--error); }
+
+/* ── Dashboard Cards ── */
+.l1-card { margin-bottom: var(--space-md); cursor: pointer; transition: box-shadow 0.15s; }
+.l1-card:hover { box-shadow: 0 1px 4px rgba(20,20,19,0.08); }
+.l1-header { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
+.l1-header .l1-name { font-family: var(--font-display); font-size: 20px; font-weight: 500; color: var(--ink); }
+.l1-header .l1-code { font-family: var(--font-mono); font-size: 13px; color: var(--muted); background: var(--surface-cream-strong); padding: 2px 8px; border-radius: var(--radius-xs); }
+.l1-detail { margin-top: var(--space-lg); padding-top: var(--space-lg); border-top: 1px solid var(--hairline); }
+.l2-list { margin-left: var(--space-xl); padding-left: var(--space-md); border-left: 1px solid var(--hairline); }
+.l2-item { margin-bottom: var(--space-md); }
+.l2-item:last-child { margin-bottom: 0; }
+
+/* ── Admin cards layout ── */
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: var(--space-md); }
+
+/* ── Team Dashboard ── */
+.team-dash-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+.team-card {
+  margin-bottom: var(--space-md);
+}
+.team-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+.team-card__title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.team-card__meta {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  gap: var(--space-md);
+}
+.team-card__body {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--hairline);
+}
+.team-card__person-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+  flex-wrap: wrap;
+}
+.team-card__person-name {
+  font-weight: 500;
+  min-width: 80px;
+}
+.team-card__unassigned {
+  color: var(--error);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .top-nav { padding: 0 var(--space-md); gap: var(--space-sm); }
+  .content { padding: var(--space-md); }
+  .team-dash-metrics { grid-template-columns: 1fr; }
+  .admin-grid { grid-template-columns: 1fr; }
+}

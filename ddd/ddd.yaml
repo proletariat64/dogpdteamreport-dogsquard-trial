@@ -1,0 +1,616 @@
+version: "1.0"
+project: 产品管理信息录入系统
+date: "2026-05-20"
+
+# =============================================
+# 通用语言（按边界上下文分组）
+# =============================================
+ubiquitous_language:
+  organization:
+    - term: 标签
+      english: Tag
+      definition: 对团队或人员的自由分类标记
+    - term: 团队
+      english: Team
+      definition: 人员所属的组织单元
+    - term: 人员
+      english: Person
+      definition: 组织中的个体成员
+    - term: 主管
+      english: Manager
+      definition: 人员之间的汇报关系
+    - term: 所在地
+      english: Location
+      definition: 人员办公城市
+    - term: 职级
+      english: Level
+      definition: 内部职级标识
+  product_management:
+    - term: L1 产品
+      english: L1 Product
+      definition: 一级产品（产品大类），聚合根
+    - term: L2 产品
+      english: L2 Product
+      definition: 二级产品（产品子类/模块），隶属 L1 产品
+    - term: 产品编码
+      english: Product Code
+      definition: 产品的唯一业务标识
+    - term: 产品负责人
+      english: Product Owner
+      definition: 与 L1/L2 产品多对多关联的人员
+  goal_management:
+    - term: L0 目标
+      english: L0 Goal
+      definition: 部门级战略目标，独立聚合根
+    - term: L1 目标
+      english: L1 Goal
+      definition: 产品级目标，绑定 L1 产品
+    - term: L2 目标
+      english: L2 Goal
+      definition: 模块级目标，绑定 L2 产品
+    - term: 目标分解
+      english: Goal Decomposition
+      definition: L0→L1、L1→L2 的多对多层级关联关系
+  dashboard:
+    - term: 覆盖率
+      english: Coverage Percent
+      definition: L1 产品下已分配人员的 L2 产品占比
+    - term: 看板节点
+      english: Dashboard Node
+      definition: 以 L1 产品为根聚合的树形视图单元
+
+# =============================================
+# 边界上下文
+# =============================================
+bounded_contexts:
+  - name: organization
+    display_name: 组织上下文
+    responsibility: 维护人员、团队、标签的基础数据与关联关系
+    aggregate_roots:
+      - name: Tag
+        identifier: id
+        attributes:
+          - name: id
+            type: string
+            nullable: false
+          - name: value
+            type: string
+            nullable: false
+            constraints:
+              - unique
+              - max_length: 50
+          - name: createdAt
+            type: datetime
+            nullable: false
+          - name: updatedAt
+            type: datetime
+            nullable: false
+
+      - name: Team
+        identifier: id
+        attributes:
+          - name: id
+            type: string
+            nullable: false
+          - name: name
+            type: string
+            nullable: false
+            constraints:
+              - max_length: 100
+          - name: createdAt
+            type: datetime
+            nullable: false
+          - name: updatedAt
+            type: datetime
+            nullable: false
+
+      - name: Person
+        identifier: id
+        attributes:
+          - name: id
+            type: string
+            nullable: false
+          - name: name
+            type: string
+            nullable: false
+            constraints:
+              - max_length: 100
+          - name: employeeId
+            type: string
+            nullable: true
+            constraints:
+              - max_length: 20
+          - name: level
+            type: string
+            nullable: true
+            constraints:
+              - max_length: 10
+          - name: teamId
+            type: string
+            nullable: true
+            reference:
+              context: organization
+              aggregate: Team
+              on_delete: SET_NULL
+          - name: location
+            type: string
+            nullable: true
+            constraints:
+              - max_length: 50
+          - name: managerId
+            type: string
+            nullable: true
+            reference:
+              context: organization
+              aggregate: Person
+              on_delete: SET_NULL
+          - name: createdAt
+            type: datetime
+            nullable: false
+          - name: updatedAt
+            type: datetime
+            nullable: false
+
+  - name: product_management
+    display_name: 产品管理上下文
+    responsibility: 维护 L1/L2 产品定义、产品负责人、人员与产品的参与关系
+    aggregate_roots:
+      - name: L1Product
+        identifier: id
+        note: L2Product 在领域内为其内部实体，REST API 保留独立端点（ADR-004）
+        attributes:
+          - name: id
+            type: string
+            nullable: false
+          - name: name
+            type: string
+            nullable: false
+            constraints:
+              - max_length: 100
+          - name: code
+            type: ProductCode
+            nullable: false
+            constraints:
+              - unique
+          - name: teamId
+            type: string
+            nullable: true
+            reference:
+              context: organization
+              aggregate: Team
+              on_delete: SET_NULL
+          - name: createdAt
+            type: datetime
+            nullable: false
+          - name: updatedAt
+            type: datetime
+            nullable: false
+        internal_entities:
+          - name: L2Product
+            identifier: id
+            attributes:
+              - name: id
+                type: string
+                nullable: false
+              - name: l1Id
+                type: string
+                nullable: false
+                reference:
+                  context: product_management
+                  aggregate: L1Product
+                  on_delete: CASCADE
+              - name: name
+                type: string
+                nullable: false
+                constraints:
+                  - max_length: 100
+              - name: code
+                type: ProductCode
+                nullable: false
+              - name: createdAt
+                type: datetime
+                nullable: false
+              - name: updatedAt
+                type: datetime
+                nullable: false
+
+  - name: goal_management
+    display_name: 目标管理上下文
+    responsibility: 维护 L0/L1/L2 三级目标及层级分解关系
+    aggregate_roots:
+      - name: L0Goal
+        identifier: id
+        attributes:
+          - name: id
+            type: string
+            nullable: false
+          - name: content
+            type: string
+            nullable: false
+            constraints:
+              - max_length: 2000
+          - name: standard
+            type: GoalStandard
+            nullable: true
+          - name: createdAt
+            type: datetime
+            nullable: false
+          - name: updatedAt
+            type: datetime
+            nullable: false
+
+      - name: L1Goal
+        identifier: id
+        note: 严格隶属于一个 L1Product
+        attributes:
+          - name: id
+            type: string
+            nullable: false
+          - name: l1ProductId
+            type: string
+            nullable: false
+            reference:
+              context: product_management
+              aggregate: L1Product
+              on_delete: CASCADE
+          - name: content
+            type: string
+            nullable: false
+            constraints:
+              - max_length: 2000
+          - name: standard
+            type: GoalStandard
+            nullable: true
+          - name: createdAt
+            type: datetime
+            nullable: false
+          - name: updatedAt
+            type: datetime
+            nullable: false
+
+      - name: L2Goal
+        identifier: id
+        note: 严格隶属于一个 L2Product
+        attributes:
+          - name: id
+            type: string
+            nullable: false
+          - name: l2ProductId
+            type: string
+            nullable: false
+            reference:
+              context: product_management
+              aggregate: L2Product
+              on_delete: CASCADE
+          - name: content
+            type: string
+            nullable: false
+            constraints:
+              - max_length: 2000
+          - name: standard
+            type: GoalStandard
+            nullable: true
+          - name: createdAt
+            type: datetime
+            nullable: false
+          - name: updatedAt
+            type: datetime
+            nullable: false
+
+  - name: dashboard
+    display_name: 透视看板上下文
+    responsibility: 跨上下文聚合查询，生成只读树形视图
+    note: 查询模型（CQRS 读模型），直接通过 SQL JOIN 实现，不维护独立聚合状态
+    aggregate_roots: []
+
+# =============================================
+# 值对象定义
+# =============================================
+value_objects:
+  - name: ProductCode
+    definition: 产品业务编码
+    constraints:
+      - not_empty
+      - max_length: 20
+    uniqueness_scope:
+      - L1Product: global
+      - L2Product: business_required
+
+  - name: EmployeeId
+    definition: 员工编号
+    constraints:
+      - max_length: 20
+
+  - name: Level
+    definition: 职级
+    constraints:
+      - max_length: 10
+
+  - name: Location
+    definition: 所在地
+    constraints:
+      - max_length: 50
+
+  - name: GoalStandard
+    definition: 目标衡量标准
+    constraints:
+      - max_length: 2000
+
+  - name: TagValue
+    definition: 标签文本
+    constraints:
+      - not_empty
+      - max_length: 50
+      - unique: global
+
+# =============================================
+# 关联对象（多对多关系）
+# =============================================
+associations:
+  - name: TeamTag
+    left:
+      context: organization
+      aggregate: Team
+    right:
+      context: organization
+      aggregate: Tag
+    on_delete: CASCADE_BOTH
+
+  - name: PersonTag
+    left:
+      context: organization
+      aggregate: Person
+    right:
+      context: organization
+      aggregate: Tag
+    on_delete: CASCADE_BOTH
+
+  - name: L1ProductOwner
+    left:
+      context: product_management
+      aggregate: L1Product
+    right:
+      context: organization
+      aggregate: Person
+    on_delete: CASCADE_BOTH
+
+  - name: L2ProductOwner
+    left:
+      context: product_management
+      aggregate: L2Product
+    right:
+      context: organization
+      aggregate: Person
+    on_delete: CASCADE_BOTH
+
+  - name: PersonL1Product
+    left:
+      context: organization
+      aggregate: Person
+    right:
+      context: product_management
+      aggregate: L1Product
+    on_delete: CASCADE_BOTH
+
+  - name: PersonL2Product
+    left:
+      context: organization
+      aggregate: Person
+    right:
+      context: product_management
+      aggregate: L2Product
+    on_delete: CASCADE_BOTH
+
+  - name: L0GoalL1Goal
+    left:
+      context: goal_management
+      aggregate: L0Goal
+    right:
+      context: goal_management
+      aggregate: L1Goal
+    on_delete: CASCADE_BOTH
+    semantic: 目标分解（L0 → L1）
+
+  - name: L1GoalL2Goal
+    left:
+      context: goal_management
+      aggregate: L1Goal
+    right:
+      context: goal_management
+      aggregate: L2Goal
+    on_delete: CASCADE_BOTH
+    semantic: 目标分解（L1 → L2）
+
+# =============================================
+# 领域事件（逻辑等价实现，无事件总线）
+# =============================================
+domain_events:
+  - name: TeamDeleted
+    publisher:
+      context: organization
+      aggregate: Team
+    handlers:
+      - action: SET_NULL
+        target: Person.teamId
+      - action: SET_NULL
+        target: L1Product.teamId
+
+  - name: PersonDeleted
+    publisher:
+      context: organization
+      aggregate: Person
+    handlers:
+      - action: CASCADE
+        target: l1_product_owners
+      - action: CASCADE
+        target: l2_product_owners
+      - action: SET_NULL
+        target: people.manager_id
+      - action: CASCADE
+        target: person_l1_products
+      - action: CASCADE
+        target: person_l2_products
+      - action: CASCADE
+        target: person_tags
+
+  - name: TagDeleted
+    publisher:
+      context: organization
+      aggregate: Tag
+    handlers:
+      - action: CASCADE
+        target: team_tags
+      - action: CASCADE
+        target: person_tags
+
+  - name: L1ProductDeleted
+    publisher:
+      context: product_management
+      aggregate: L1Product
+    handlers:
+      - action: CASCADE
+        target: l2_products
+        note: 聚合一致性，内部实体随聚合根删除
+      - action: CASCADE
+        target: l1_product_owners
+      - action: CASCADE
+        target: person_l1_products
+      - action: CASCADE
+        target: l1_goals
+
+  - name: L2ProductDeleted
+    publisher:
+      context: product_management
+      aggregate: L2Product
+    handlers:
+      - action: CASCADE
+        target: l2_product_owners
+      - action: CASCADE
+        target: person_l2_products
+      - action: CASCADE
+        target: l2_goals
+
+  - name: L0GoalDeleted
+    publisher:
+      context: goal_management
+      aggregate: L0Goal
+    handlers:
+      - action: CASCADE
+        target: l0_goal_l1_goals
+
+  - name: L1GoalDeleted
+    publisher:
+      context: goal_management
+      aggregate: L1Goal
+    handlers:
+      - action: CASCADE
+        target: l0_goal_l1_goals
+      - action: CASCADE
+        target: l1_goal_l2_goals
+
+  - name: L2GoalDeleted
+    publisher:
+      context: goal_management
+      aggregate: L2Goal
+    handlers:
+      - action: CASCADE
+        target: l1_goal_l2_goals
+
+# =============================================
+# 不变量
+# =============================================
+invariants:
+  global:
+    - id: INV-001
+      rule: Tag.value 全局唯一
+      enforcement: [db_unique, app_validation]
+    - id: INV-002
+      rule: L1Product.code 全局唯一
+      enforcement: [db_unique, app_validation]
+    - id: INV-003
+      rule: Person.managerId 不能等于自身 id（禁止自引用）
+      enforcement: [app_validation]
+    - id: INV-004
+      rule: Person.managerId 如非空，则对应 Person 必须存在
+      enforcement: [db_foreign_key, app_validation]
+
+  organization:
+    - id: INV-ORG-001
+      rule: 删除 Team 时，关联 Person 的 teamId 置空
+    - id: INV-ORG-002
+      rule: 删除 Team 时，关联 L1Product 的 teamId 置空
+    - id: INV-ORG-003
+      rule: 删除 Person 时，其下属的 managerId 置空
+
+  product_management:
+    - id: INV-PROD-001
+      rule: L2Product.l1Id 不可为空，且必须指向存在的 L1Product
+    - id: INV-PROD-002
+      rule: 删除 L1Product 时，其下所有 L2Product 必须级联删除
+    - id: INV-PROD-003
+      rule: L2Product.code 在业务上要求唯一
+      enforcement: [app_validation]
+
+  goal_management:
+    - id: INV-GOAL-001
+      rule: L1Goal.l1ProductId 不可为空，且必须指向存在的 L1Product
+    - id: INV-GOAL-002
+      rule: L2Goal.l2ProductId 不可为空，且必须指向存在的 L2Product
+    - id: INV-GOAL-003
+      rule: 删除 L1Product 时，其下所有 L1Goal 级联删除
+    - id: INV-GOAL-004
+      rule: 删除 L2Product 时，其下所有 L2Goal 级联删除
+
+# =============================================
+# 数据迁移映射
+# =============================================
+migration_mapping:
+  source: 原纯静态原型 data.json
+  strategy: full_replace
+  notes:
+    - 导入接口 /api/import 设计为全量覆盖（先清空现有数据，再写入新数据）
+    - 生产环境执行前必须先备份
+  mappings:
+    - source_field: tags[] (字符串数组)
+      target: Tag 实体 + team_tags / person_tags
+      rule: 去重后写入 tags 表，再按原关联建立多对多关系
+
+    - source_field: teams[].tags[]
+      target: TeamTag
+      rule: 同上
+
+    - source_field: people[].tags[]
+      target: PersonTag
+      rule: 同上
+
+    - source_field: people[].l1Products[]
+      target: PersonL1Product
+      rule: 原字符串数组 → 关联表
+
+    - source_field: people[].l2Products[]
+      target: PersonL2Product
+      rule: 原字符串数组 → 关联表
+
+    - source_field: l1Products[].owners[]
+      target: L1ProductOwner
+      rule: 原字符串数组 → 关联表
+
+    - source_field: l2Products[].owners[]
+      target: L2ProductOwner
+      rule: 原字符串数组 → 关联表
+
+    - source_field: goals.l1[].productId
+      target: L1Goal.l1ProductId
+      rule: 原 Goal 多选产品取第一个作为外键
+
+    - source_field: goals.l2[].productId
+      target: L2Goal.l2ProductId
+      rule: 同上
+
+    - source_field: goals.l0[].l1GoalIds[]
+      target: L0GoalL1Goal
+      rule: 直接映射为多对多关联
+
+    - source_field: goals.l1[].l2GoalIds[]
+      target: L1GoalL2Goal
+      rule: 直接映射为多对多关联

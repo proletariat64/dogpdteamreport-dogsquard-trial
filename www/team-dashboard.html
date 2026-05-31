@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>团队视图 — 部门目标管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Inter:wght@400;500&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/design-tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="content">
+  <div class="toolbar">
+    <h1 class="page-title" style="border:none;padding:0;flex:1">团队视图</h1>
+    <select class="form-select" id="filterTeam" style="width:200px" data-testid="team-dash-filter-team-select"><option value="">全部团队</option></select>
+    <select class="form-select" id="filterLocation" style="width:160px" data-testid="team-dash-filter-location-select"><option value="">全部地点</option></select>
+    <button class="btn btn-secondary btn-sm" id="btnRefresh">刷新</button>
+  </div>
+  <div class="team-dash-metrics" id="metricsRow">
+    <div class="card card-metric" data-testid="team-dash-metric-team-count">
+      <div class="metric-value" id="metricTeams">0</div>
+      <div class="metric-label">团队总数</div>
+    </div>
+    <div class="card card-metric" data-testid="team-dash-metric-people-count">
+      <div class="metric-value" id="metricPeople">0</div>
+      <div class="metric-label">人员总数</div>
+    </div>
+    <div class="card card-metric" data-testid="team-dash-metric-unassigned-count">
+      <div class="metric-value" id="metricUnassigned">0</div>
+      <div class="metric-label">未分配人员</div>
+    </div>
+  </div>
+  <div id="teamCards"></div>
+  <div id="emptyState" class="empty-state" style="display:none" data-testid="dash-empty-state">暂无团队数据</div>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/analytics.js"></script>
+<script src="/js/components.js"></script>
+<script src="/js/team-dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>团队管理 — 部门目标管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Inter:wght@400;500&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/design-tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="content">
+  <div class="toolbar">
+    <h1 class="page-title" style="border:none;padding:0;flex:1">团队管理</h1>
+    <button class="btn btn-primary btn-sm" id="btnAdd">+ 添加团队</button>
+    <span class="count-badge" id="teamCount" style="font-size:13px;color:var(--muted)">共 0 个</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>团队名称</th><th>标签</th><th style="width:80px"></th></tr></thead>
+      <tbody id="teamsTable"></tbody>
+    </table>
+  </div>
+  <div id="emptyState" class="empty-state" style="display:none">暂无团队数据</div>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/analytics.js"></script>
+<script src="/js/components.js"></script>
+<script src="/js/inline-editor.js"></script>
+<script src="/js/teams.js"></script>
+</body>
+</html>

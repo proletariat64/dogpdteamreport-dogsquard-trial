@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>产品管理 — 部门目标管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Inter:wght@400;500&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/design-tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="content">
+  <div class="toolbar">
+    <h1 class="page-title" style="border:none;padding:0;flex:1">产品管理</h1>
+    <button class="btn btn-primary btn-sm" id="btnAddL1">+ 添加 L1 产品</button>
+    <button class="btn btn-secondary btn-sm" id="btnAddL2">+ 添加 L2 产品</button>
+    <select class="form-select" id="sortBy" style="width:150px">
+      <option value="">默认排序</option>
+      <option value="team">按团队</option>
+      <option value="name">按名称</option>
+      <option value="code">按产品编号</option>
+    </select>
+    <span id="productCount" style="font-size:13px;color:var(--muted)">共 0 个 L1，0 个 L2</span>
+  </div>
+  <div id="productTree"></div>
+  <div id="emptyState" class="empty-state" style="display:none">暂无产品数据</div>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/analytics.js"></script>
+<script src="/js/components.js"></script>
+<script src="/js/inline-editor.js"></script>
+<script src="/js/products.js"></script>
+</body>
+</html>

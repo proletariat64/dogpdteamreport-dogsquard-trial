@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>目标管理 — 部门目标管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Inter:wght@400;500&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/design-tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="content">
+  <div class="toolbar">
+    <h1 class="page-title" style="border:none;padding:0;flex:1">目标管理</h1>
+    <div class="tabs" id="goalTabs">
+      <button class="tab active" data-tab="l0">L0 部门级</button>
+      <button class="tab" data-tab="l1">L1 产品级</button>
+      <button class="tab" data-tab="l2">L2 模块级</button>
+    </div>
+    <button class="btn btn-primary btn-sm" id="btnAdd">+ 添加目标</button>
+    <span class="count-badge" id="goalCount" style="font-size:13px;color:var(--muted)">共 0 个</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead id="goalTableHead"></thead>
+      <tbody id="goalTable"></tbody>
+    </table>
+  </div>
+  <div id="emptyState" class="empty-state" style="display:none">暂无目标数据</div>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/analytics.js"></script>
+<script src="/js/components.js"></script>
+<script src="/js/inline-editor.js"></script>
+<script src="/js/goals.js"></script>
+</body>
+</html>

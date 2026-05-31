@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理后台 — 部门目标管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500&family=Inter:wght@400;500&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/design-tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/layout.css">
+</head>
+<body>
+<div class="content">
+  <h1 class="page-title">管理后台</h1>
+  <div class="admin-grid" style="margin-top:var(--space-lg)">
+    <!-- System Status Card -->
+    <div class="card">
+      <h3>系统状态</h3>
+      <div class="divider"></div>
+      <div id="systemStatus">
+        <div class="inline-flex gap-sm"><span style="color:var(--muted)">数据库大小：</span><strong id="dbSize">--</strong></div>
+        <div class="inline-flex gap-sm mt-md"><span style="color:var(--muted)">运行时间：</span><strong id="uptime">--</strong></div>
+        <div class="divider"></div>
+        <div id="recordCounts" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-xs)"></div>
+      </div>
+    </div>
+
+    <!-- Edit Lock Card -->
+    <div class="card">
+      <h3>编辑锁</h3>
+      <div class="divider"></div>
+      <div id="lockStatus">
+        <div class="inline-flex gap-sm">
+          <span style="color:var(--muted)">状态：</span>
+          <strong id="lockState">--</strong>
+        </div>
+        <div id="lockDetails" class="mt-md" style="display:none">
+          <div class="inline-flex gap-sm"><span style="color:var(--muted)">持有者 IP：</span><span id="lockHolder">--</span></div>
+          <div class="inline-flex gap-sm"><span style="color:var(--muted)">获取时间：</span><span id="lockAcquired">--</span></div>
+          <div class="inline-flex gap-sm"><span style="color:var(--muted)">最后活动：</span><span id="lockLastActivity">--</span></div>
+        </div>
+      </div>
+      <div style="margin-top:var(--space-lg)">
+        <button class="btn btn-danger btn-sm" id="btnForceRelease" onclick="doForceRelease()">强制释放锁</button>
+      </div>
+    </div>
+
+    <!-- Backup Card -->
+    <div class="card" style="grid-column: 1 / -1">
+      <h3>数据库备份</h3>
+      <div class="divider"></div>
+      <div style="margin-bottom:var(--space-md)">
+        <button class="btn btn-primary btn-sm" id="btnBackup" onclick="doBackup()">创建备份</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>文件名</th><th>大小</th><th>创建时间</th><th style="width:80px"></th></tr></thead>
+          <tbody id="backupTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/js/api.js"></script>
+<script src="/js/state.js"></script>
+<script src="/js/analytics.js"></script>
+<script src="/js/components.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>
