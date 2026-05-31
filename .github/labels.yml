@@ -1,0 +1,79 @@
+labels:
+  - name: feat
+    color: "0e8a16"
+    description: "User-visible feature or product capability."
+  - name: bug
+    color: "d73a4a"
+    description: "Defect or regression fix."
+  - name: task
+    color: "cfd3d7"
+    description: "Maintenance, process, documentation, or infrastructure task."
+  - name: docs
+    color: "0075ca"
+    description: "Documentation-only or documentation-heavy work."
+  - name: test
+    color: "5319e7"
+    description: "Test coverage, test tooling, or validation work."
+  - name: refactor
+    color: "fbca04"
+    description: "Internal code change without intended behavior change."
+  - name: ci
+    color: "1d76db"
+    description: "Continuous integration checks or repository automation."
+  - name: release
+    color: "0052cc"
+    description: "Release notes, release process, or versioned delivery."
+  - name: process
+    color: "bfdadc"
+    description: "Project workflow, governance, or control-board work."
+  - name: epic
+    color: "3e4b9e"
+    description: "Large work item that may need multiple PRs or UAT."
+  - name: hotfix
+    color: "b60205"
+    description: "Urgent fix with elevated release attention."
+  - name: skip-docs
+    color: "fef2c0"
+    description: "Explicit documentation gate bypass with justification."
+  - name: uat
+    color: "c2e0c6"
+    description: "Manual user acceptance testing needed."
+  - name: blocked
+    color: "000000"
+    description: "Cannot proceed without external input or dependency."
+  - name: needs-review
+    color: "fbca04"
+    description: "Ready for human or designated reviewer attention."
+  - name: ready
+    color: "0e8a16"
+    description: "Ready for next workflow step."
+  - name: agent-generated
+    color: "ededed"
+    description: "Contains substantial agent-generated content."
+  - name: codex
+    color: "ededed"
+    description: "Codex assisted with the work."
+  - name: claude-code
+    color: "ededed"
+    description: "Claude Code assisted with the work."
+  - name: kimi
+    color: "ededed"
+    description: "Kimi CLI assisted with the work."
+  - name: hermes
+    color: "ededed"
+    description: "Hermes CLI assisted with the work."
+  - name: doc-watch-guard
+    color: "ededed"
+    description: "Doc Watch Guard review, cleanup, or report."
+  - name: p0
+    color: "b60205"
+    description: "Highest priority; urgent or blocking."
+  - name: p1
+    color: "d93f0b"
+    description: "High priority."
+  - name: p2
+    color: "fbca04"
+    description: "Normal priority."
+  - name: p3
+    color: "cfd3d7"
+    description: "Low priority or backlog."

@@ -108,13 +108,10 @@ describe("Goal Linking API - 全量测试", () => {
       expect(res.status).toBe(400);
     });
 
-    it("BUG: POST 不存在的 L0 → 500（FK 约束违反 + service 未校验 L0 存在性）", async () => {
-      // BUG-002: linkL0ToL1 未校验 l0GoalId 是否存在，INSERT OR IGNORE 在 SQLite
-      // foreign_keys=ON 时无法跳过 FK 约束违反，返回 500
-      // 应返回 404 提示 L0 目标不存在
+    it("POST 不存在的 L0 → 404", async () => {
       const { g1Id } = await setupLinking();
       const res = await request(app).post("/api/goals/l0/g0-fake-id/l1-goals").send({ l1GoalIds: [g1Id] });
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
 
     it("DELETE /api/goals/l0/:id/l1-goals/:l1GoalId - 正常解除 → 200", async () => {
