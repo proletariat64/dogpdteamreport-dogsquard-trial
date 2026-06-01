@@ -1,0 +1,336 @@
+name: Dev Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      deploy_ref:
+        description: "Git ref to deploy. Defaults to current ref."
+        required: false
+        type: string
+      action:
+        description: "Deploy action."
+        required: false
+        default: "deploy"
+        type: choice
+        options:
+          - "deploy"
+          - "rollback"
+      dry_run:
+        description: "Run deploy in dry-run mode."
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      restart_runtime:
+        description: "Restart runtime after deploy or rollback."
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      target_release:
+        description: "Release ID to roll back to. Required when action=rollback."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-dev:
+    name: Deploy Dev
+    runs-on: ubuntu-24.04
+    environment: development
+    env:
+      DEV_HOST: ${{ secrets.DEV_HOST }}
+      DEV_USER: ${{ secrets.DEV_USER }}
+      DEV_SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
+      DEV_DEPLOY_ROOT: ${{ vars.DEV_DEPLOY_ROOT }}
+      DEV_APP_NAME: ${{ vars.DEV_APP_NAME }}
+      DEV_BACKEND_PORT: ${{ vars.DEV_BACKEND_PORT }}
+      DEV_FRONTEND_PORT: ${{ vars.DEV_FRONTEND_PORT }}
+      DEPLOY_ACTION: ${{ github.event_name == 'workflow_dispatch' && inputs.action || 'deploy' }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+      RESTART_RUNTIME: ${{ github.event_name == 'workflow_dispatch' && inputs.restart_runtime || 'true' }}
+      TARGET_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.target_release || '' }}
+      SSH_KEY_FILE: ${{ github.workspace }}/.github-dev-deploy-key
+      SSH_KNOWN_HOSTS: ${{ github.workspace }}/.github-dev-known-hosts
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_ref || github.ref }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Validate development deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=0
+          for name in DEV_HOST DEV_USER DEV_SSH_KEY DEV_DEPLOY_ROOT DEV_APP_NAME DEV_BACKEND_PORT DEV_FRONTEND_PORT; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "CONFIG ${name}: missing" >&2
+              missing=1
+            else
+              echo "CONFIG ${name}: present"
+            fi
+          done
+          if [[ "$missing" -ne 0 ]]; then
+            echo "Missing required development deployment configuration. Add the listed names to the development environment." >&2
+            exit 2
+          fi
+
+          case "$DEPLOY_ACTION" in
+            deploy|rollback) ;;
+            *)
+              echo "DEPLOY_ACTION must be deploy or rollback; got: $DEPLOY_ACTION" >&2
+              exit 2
+              ;;
+          esac
+
+          case "$DRY_RUN" in
+            true|false) ;;
+            *)
+              echo "DRY_RUN must be true or false; got: $DRY_RUN" >&2
+              exit 2
+              ;;
+          esac
+
+          case "$RESTART_RUNTIME" in
+            true|false) ;;
+            *)
+              echo "RESTART_RUNTIME must be true or false; got: $RESTART_RUNTIME" >&2
+              exit 2
+              ;;
+          esac
+
+          if [[ "$DEPLOY_ACTION" == "rollback" && -z "$TARGET_RELEASE" ]]; then
+            echo "TARGET_RELEASE is required when DEPLOY_ACTION=rollback." >&2
+            exit 2
+          fi
+
+          for name in DEV_BACKEND_PORT DEV_FRONTEND_PORT; do
+            if ! [[ "${!name}" =~ ^[0-9]+$ ]]; then
+              echo "$name must be numeric." >&2
+              exit 2
+            fi
+          done
+
+          protected_host="$(printf '%s' "$DEV_HOST" | tr '[:upper:]' '[:lower:]')"
+          case "$protected_host" in
+            "")
+              echo "Blocked: DEV_HOST is empty." >&2
+              exit 1
+              ;;
+            us.hermes|*us.hermes*|43.130.49.185|proletariat.icu|www.proletariat.icu|*proletariat.icu*)
+              echo "Blocked: DEV_HOST targets protected host or domain." >&2
+              echo "Dev deploy must target cn.ant only." >&2
+              exit 1
+              ;;
+          esac
+
+          echo "Development deployment configuration preflight passed."
+          echo "Protected target guard passed."
+          echo "DEPLOY_ACTION=${DEPLOY_ACTION}"
+          echo "DRY_RUN=${DRY_RUN}"
+          echo "RESTART_RUNTIME=${RESTART_RUNTIME}"
+          if [[ "$DEPLOY_ACTION" == "rollback" ]]; then
+            echo "TARGET_RELEASE is present."
+          fi
+
+      - name: Validate local quality
+        shell: bash
+        run: |
+          set -euo pipefail
+          make doc-check
+          make doc-guard
+          make release-check
+          git diff --check
+          bash -n scripts/*.sh
+
+      - name: Build and package release
+        if: ${{ env.DEPLOY_ACTION == 'deploy' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_NAME="$DEV_APP_NAME" make package-release
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$DEV_SSH_KEY" > "$SSH_KEY_FILE"
+          chmod 600 "$SSH_KEY_FILE"
+          : > "$SSH_KNOWN_HOSTS"
+          ssh-keyscan -H "$DEV_HOST" 2>/dev/null >> "$SSH_KNOWN_HOSTS"
+          chmod 600 "$SSH_KNOWN_HOSTS"
+          echo "SSH configuration prepared with dedicated key and known_hosts file."
+
+      - name: Deploy artifact to development host
+        if: ${{ env.DEPLOY_ACTION == 'deploy' }}
+        shell: bash
+        env:
+          SSH_OPTS: -o UserKnownHostsFile=${{ github.workspace }}/.github-dev-known-hosts -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes
+        run: |
+          set -euo pipefail
+          SSH_USER="$DEV_USER" \
+          SSH_KEY_FILE="$SSH_KEY_FILE" \
+          SSH_OPTS="$SSH_OPTS" \
+          HOST="$DEV_HOST" \
+          DEPLOY_ROOT="$DEV_DEPLOY_ROOT" \
+          APP_NAME="$DEV_APP_NAME" \
+          DRY_RUN="$DRY_RUN" \
+          scripts/deploy-dev.sh
+
+      - name: Restart runtime
+        if: ${{ env.DEPLOY_ACTION == 'deploy' && env.DRY_RUN == 'false' && env.RESTART_RUNTIME == 'true' }}
+        shell: bash
+        env:
+          SSH_OPTS: -o UserKnownHostsFile=${{ github.workspace }}/.github-dev-known-hosts -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes
+        run: |
+          set -euo pipefail
+          SSH_USER="$DEV_USER" \
+          SSH_KEY_FILE="$SSH_KEY_FILE" \
+          SSH_OPTS="$SSH_OPTS" \
+          HOST="$DEV_HOST" \
+          DEPLOY_ROOT="$DEV_DEPLOY_ROOT" \
+          APP_NAME="$DEV_APP_NAME" \
+          BACKEND_PORT="$DEV_BACKEND_PORT" \
+          FRONTEND_PORT="$DEV_FRONTEND_PORT" \
+          scripts/runtime-dev.sh restart
+
+      - name: Check runtime health
+        if: ${{ env.DEPLOY_ACTION == 'deploy' && env.DRY_RUN == 'false' && env.RESTART_RUNTIME == 'true' }}
+        shell: bash
+        env:
+          SSH_OPTS: -o UserKnownHostsFile=${{ github.workspace }}/.github-dev-known-hosts -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes
+        run: |
+          set -euo pipefail
+          SSH_USER="$DEV_USER" \
+          SSH_KEY_FILE="$SSH_KEY_FILE" \
+          SSH_OPTS="$SSH_OPTS" \
+          HOST="$DEV_HOST" \
+          DEPLOY_ROOT="$DEV_DEPLOY_ROOT" \
+          APP_NAME="$DEV_APP_NAME" \
+          BACKEND_PORT="$DEV_BACKEND_PORT" \
+          FRONTEND_PORT="$DEV_FRONTEND_PORT" \
+          scripts/runtime-dev.sh health
+
+      - name: Dry-run runtime status
+        if: ${{ env.DEPLOY_ACTION == 'deploy' && env.DRY_RUN == 'true' }}
+        shell: bash
+        env:
+          SSH_OPTS: -o UserKnownHostsFile=${{ github.workspace }}/.github-dev-known-hosts -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes
+        run: |
+          set -euo pipefail
+          SSH_USER="$DEV_USER" \
+          SSH_KEY_FILE="$SSH_KEY_FILE" \
+          SSH_OPTS="$SSH_OPTS" \
+          HOST="$DEV_HOST" \
+          DEPLOY_ROOT="$DEV_DEPLOY_ROOT" \
+          APP_NAME="$DEV_APP_NAME" \
+          BACKEND_PORT="$DEV_BACKEND_PORT" \
+          FRONTEND_PORT="$DEV_FRONTEND_PORT" \
+          scripts/runtime-dev.sh status
+
+      - name: Roll back development runtime
+        if: ${{ env.DEPLOY_ACTION == 'rollback' }}
+        shell: bash
+        env:
+          SSH_OPTS: -o UserKnownHostsFile=${{ github.workspace }}/.github-dev-known-hosts -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes
+        run: |
+          set -euo pipefail
+          SSH_USER="$DEV_USER" \
+          SSH_KEY_FILE="$SSH_KEY_FILE" \
+          SSH_OPTS="$SSH_OPTS" \
+          HOST="$DEV_HOST" \
+          DEPLOY_ROOT="$DEV_DEPLOY_ROOT" \
+          APP_NAME="$DEV_APP_NAME" \
+          BACKEND_PORT="$DEV_BACKEND_PORT" \
+          FRONTEND_PORT="$DEV_FRONTEND_PORT" \
+          TARGET_RELEASE="$TARGET_RELEASE" \
+          RESTART_AFTER_ROLLBACK="$RESTART_RUNTIME" \
+          scripts/runtime-dev.sh rollback
+
+      - name: Check rollback runtime health
+        if: ${{ env.DEPLOY_ACTION == 'rollback' && env.RESTART_RUNTIME == 'true' }}
+        shell: bash
+        env:
+          SSH_OPTS: -o UserKnownHostsFile=${{ github.workspace }}/.github-dev-known-hosts -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes
+        run: |
+          set -euo pipefail
+          SSH_USER="$DEV_USER" \
+          SSH_KEY_FILE="$SSH_KEY_FILE" \
+          SSH_OPTS="$SSH_OPTS" \
+          HOST="$DEV_HOST" \
+          DEPLOY_ROOT="$DEV_DEPLOY_ROOT" \
+          APP_NAME="$DEV_APP_NAME" \
+          BACKEND_PORT="$DEV_BACKEND_PORT" \
+          FRONTEND_PORT="$DEV_FRONTEND_PORT" \
+          scripts/runtime-dev.sh health
+
+      - name: Collect runtime diagnostics on failure
+        if: failure()
+        shell: bash
+        env:
+          SSH_OPTS: -o UserKnownHostsFile=${{ github.workspace }}/.github-dev-known-hosts -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes
+        run: |
+          set +e
+          if [[ -z "${DEV_HOST:-}" || -z "${DEV_USER:-}" || ! -f "$SSH_KEY_FILE" || ! -f "$SSH_KNOWN_HOSTS" ]]; then
+            echo "Skipping diagnostics because SSH configuration is incomplete."
+            exit 0
+          fi
+          protected_host="$(printf '%s' "$DEV_HOST" | tr '[:upper:]' '[:lower:]')"
+          case "$protected_host" in
+            us.hermes|*us.hermes*|43.130.49.185|proletariat.icu|www.proletariat.icu|*proletariat.icu*)
+              echo "Skipping diagnostics for protected host."
+              exit 0
+              ;;
+          esac
+
+          for action in status diagnose logs; do
+            echo "Running runtime diagnostic action: $action"
+            SSH_USER="$DEV_USER" \
+            SSH_KEY_FILE="$SSH_KEY_FILE" \
+            SSH_OPTS="$SSH_OPTS" \
+            HOST="$DEV_HOST" \
+            DEPLOY_ROOT="$DEV_DEPLOY_ROOT" \
+            APP_NAME="${DEV_APP_NAME:-dogsquard}" \
+            BACKEND_PORT="${DEV_BACKEND_PORT:-18080}" \
+            FRONTEND_PORT="${DEV_FRONTEND_PORT:-14173}" \
+            scripts/runtime-dev.sh "$action" || true
+          done
+
+      - name: Upload release artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-deploy-artifacts
+          path: |
+            dist/*.tar.gz
+          if-no-files-found: ignore

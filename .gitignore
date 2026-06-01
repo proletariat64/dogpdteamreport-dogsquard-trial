@@ -84,3 +84,8 @@ yarn-error.log*
 # ============================================================================
 public/
 data/edit-lock.json
+
+# Dogsquard local/private agent files
+AGENTS.md
+CLAUDE.md
+roster.md
