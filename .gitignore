@@ -27,6 +27,9 @@ Desktop.ini
 .claude/
 .qoder/
 .playwright-mcp/
+AGENTS.md
+CLAUDE.md
+roster.md
 
 # ============================================================================
 # Node.js
