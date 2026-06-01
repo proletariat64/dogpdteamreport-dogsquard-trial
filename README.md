@@ -241,3 +241,34 @@ l0_goal_l1_goals, l1_goal_l2_goals
 | `npm test` | 运行全部测试 |
 | `npm run seed` | 导入种子数据 |
 | `npm run backup` | 手动备份数据库 |
+
+## Dogsquard Governance Trial
+
+This repository is a Dogsquard governance trial copy of `dogpdteamreport`.
+The original `dogpdteamreport` repository is not modified by this trial.
+
+Dogsquard adds:
+
+- docs governance under `docs/`
+- issue and PR templates
+- Node-adapted PR Quality Gate
+- local validation commands through `make`
+- a Control Board issue for current work and decisions
+
+Existing project-specific docs remain in `ddd/` and `spec/`.
+
+### Local Governance Checks
+
+```bash
+npm ci
+npm test
+npm run build
+make help
+make doc-check
+make doc-guard
+make test
+make lint
+make release-check
+```
+
+Deployment is out of scope for the first adoption PR. No production, server, reverse proxy, or public URL changes are included.

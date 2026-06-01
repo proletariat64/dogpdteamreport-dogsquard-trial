@@ -48,15 +48,13 @@ describe("Teams API - 全量 CRUD 测试", () => {
       expect(links).toHaveLength(2);
     });
 
-    it("BUG: tagIds 含不存在的 ID → 500（INSERT OR IGNORE 不抑制 FK 约束违反）", async () => {
-      // BUG-001: INSERT OR IGNORE 在 SQLite foreign_keys=ON 时无法跳过 FK 约束违反
-      // 应返回 201 静默跳过，或返回 400 提示 tagId 不存在
+    it("tagIds 含不存在的 ID → 201 并跳过无效 tagId", async () => {
       const res = await request(app).post("/api/teams").send({
         name: "测试团队",
         tagIds: ["tag-nonexistent-12345"],
       });
-      // 当前行为：500 内部错误
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(201);
+      expect(res.body.data.name).toBe("测试团队");
     });
 
     it("边界值：name 最小长度 1 → 201", async () => {

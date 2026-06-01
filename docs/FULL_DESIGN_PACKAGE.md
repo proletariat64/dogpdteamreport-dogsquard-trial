@@ -1,3 +1,16 @@
+---
+title: "Frontend Refactor and Interface Design Package"
+doc_type: "design"
+status: "draft"
+owner: "user"
+source: "user"
+created: "2026-05-28"
+updated: "2026-05-31"
+related_issue: "#1"
+related_pr: ""
+supersedes: ""
+---
+
 # 前端重构与界面设计方案包
 
 > 项目：部门目标管理录入系统  
